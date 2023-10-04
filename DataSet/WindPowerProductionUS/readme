@@ -1,0 +1,10 @@
+Dataset: Wind power production in the USA.
+Description of the data is present in sheet 'datadictionary' available in the same folder.
+
+1. Data Collection Methodology. State how the data is collected, by whom, how often, etc. 
+[Ans]:Sample data set is analysed in Kaggle and then actual quaterly data downloaded from eia.gov datasource website for the period 2001 to 2023 Q2.
+
+2. Why does this data set intrigue you?
+[Ans]This data set is about the wind production in the USA.
+As an advocate for clean energy, I want to analyze the efforts of all the states in the USA to strive towards energy independence.
+Wind production data directly correlates with reductions in greenhouse gas emissions and air pollution, contributing to a cleaner environment. 
