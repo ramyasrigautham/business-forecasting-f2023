@@ -1,0 +1,174 @@
+---
+title: "Assignment4"
+output: html_document
+date: "2023-10-06"
+author: 'Ramya Sri Gautham:ramya.srigautham@rutgers.edu'
+---
+
+
+
+```{r message=FALSE}
+#loading file and libraries
+library(readxl)
+library(forecast)
+windDt <- read_excel('wind-power-production-us.xlsx')
+
+```
+
+
+###### *Extracting only other renewable power production in the USA column and period starting from 2016 to 2023 from the data set
+```{r}
+
+windDt$Quarter_Year <- as.Date(windDt$Quarter_Year)
+filtered_data <- windDt[windDt$Quarter_Year >= as.Date('2016-01-01',) & windDt$Quarter_Year <= as.Date('2023-04-01',),]
+
+#Time series data from 2016 to 2023
+ts_data <- ts(filtered_data$Wind_United_States, start=c(2016), end=c(2023,2), frequency=4)
+attributes(ts_data)
+```
+
+```{r}
+plot(ts_data, main='Wind power Production from 2016 to 2023', xlab='years', ylab='Power Generated in thousand megawatthours')
+```
+
+##### From just the plot of the Time Series we can see that there is a slight trend in the data over the period of time and also showing signs of seasonality year to year from the regular peaks in the data. 
+
+```{r}
+Acf(ts_data) #Acf plot
+```
+
+
+##### According to the analysis of ACF, if the plot shows large and positive autocorrelations for small lags then the data shows signs of a particular trend and if the autocorrelations are larger for seasonal lags then the data shows signs of seasonality. From the given plot it is evident that the data in discussion shows signs of both trend and seasonality. 
+
+```{r}
+#take Mean of all available history
+mean_forecast <- meanf(ts_data,5)
+plot(mean_forecast, xlab='years', ylab='Power Generated in thousand megawatthours')
+```
+
+
+##### Since the mean of the data is **80953.1**, the expectation of the forecast based on mean should be spaced around that value and plot justifies the expectation. 
+
+```{r}
+# Naive
+naive_forecast <- naive(ts_data,5)
+plot(naive_forecast , main='Naive forecast plot for next 5 periods', xlab='years', ylab='Power Generated in thousand megawatthours')
+```
+
+
+##### Naive Forecast for any time t+1 will always depend on the value at time t. According to our data, the last value which is the total amount of energy that was produced by the United States for the 1st quarter of 2023 is **102354** thousand kilowatt hours. As expected, our forecast based on naive method is spread around the this value 
+
+
+```{r}
+# Random Walk
+rwf_forecast <- rwf(ts_data,5)
+rwf_forecast <- rwf(ts_data,5, drift=TRUE)
+# Seasonal Naive
+snaive_forecast<- snaive(ts_data,5)
+plot(snaive_forecast , main='Seasonal Naive forecast plot for next 5 periods', xlab='years', ylab='Power Generated in thousand megawatthours')
+```
+
+
+##### A seasonal naive forecast is a simple time series forecasting method where the forecast for a future period is based on the observed value from the same season in the previous year. Since our data has seasonality, the forecast of the next 5 quarters would be a projection based on the previous quarters from the point of observation and our plot justifies the same. Note that this projection does not considers the influence of trend in our data and hence would not be a best fit for our solution.
+
+
+```{r}
+# Moving Averages
+MVA5_forecast <- ma(ts_data,order=5)
+MVA9_forecast <- ma(ts_data,order=9)
+
+# plot all in a single chart
+plot(mean_forecast, xlab='years', ylab='Power Generated in thousand megawatthours')
+lines(naive_forecast$mean,col="red")
+lines(rwf_forecast$mean,col="green")
+lines(snaive_forecast$mean,col="black")
+lines(MVA5_forecast,col="Pink")
+lines(MVA9_forecast,col="Blue")
+```
+
+
+##### Random walk forecast or Drift method is a variation of the naive method that allows the forecasts to increase or decrease overtime, where the amount of change overtime (drift) is the average change seen historically. That means the value of the next 5 forecasts would depend only the last observation **102354** added with the value of drift at each level of observation.Also from the plots of Moving Averagers of orders 5 and 9 we can remove the seasonality components and we can cleary see that the data has a **Linear Additive Trend**.
+
+
+```{r}
+# Decomposition
+ets_forecast <- ets(ts_data)
+plot(ets_forecast)
+```
+
+
+##### From the decomposition of the data using the ETS function, we can see that the model that was automatically chosen was ETS(M,A,M). This would mean that the data has multiplication error, Additive Trend and Multiplicative Seasonality. Judging by the plot, we can see that the growth of the trend is quite linear and not exponential which would mean that it is additive. And the size of the growth of seasonality increases over time especially from years 2020 to 2023.
+
+```{r}
+# HoltWinters
+SSE_Simple <- HoltWinters(ts_data,beta=FALSE,gamma=FALSE)
+sseforecast <- forecast:::forecast.HoltWinters(SSE_Simple,h=5)
+plot(SSE_Simple)
+```
+
+
+##### From the decomposition analysis, we can clearly see that there is noticable influence of trend and seasonality. Hence simple smoothing equations method would not be the correct method for our forecasting as it negelects the trend and seasonality components. The resulting plots proves the same analysis.
+
+
+```{r}
+HW_forecast <- HoltWinters(ts_data)
+holtforecast <- forecast:::forecast.HoltWinters(HW_forecast,h=5)
+HW_forecast
+plot(HW_forecast)
+
+```
+
+##### Finally we come to Holt-Winters method which incorporates with both trend and seasonal components. First we try by using the default function which results in the model selecting smoothing with trend and additive seasonal component. This would not yeild the best results as we found from previous analysis that the best fit for our model would be with multiplicative component for seasonality.
+
+
+```{r}
+HW_forecastmult <- HoltWinters(ts_data , seasonal = "multiplicative")
+holtforecastmult <- forecast:::forecast.HoltWinters(HW_forecastmult,h=5)
+HW_forecastmult
+plot(HW_forecastmult)
+```
+
+##### Now we can change the sesonality to be multiplicative and see how that helps in forecasting. From the plot we can see that this is a better fit than the additive seasonality plot.
+
+
+
+```{r}
+#Forecast
+plot(sseforecast)
+forecast_ets <- forecast.ets(ets_forecast, h=5)
+plot(forecast_ets)
+plot(holtforecast)
+plot(holtforecastmult, main = "Forecasts from HoltWinters with Multiplicative Seasonality")
+
+```
+
+
+##### For all the different types of forecasts, we can see that Holt-Winters forecasting with multiplicative seasonality and normal exponential smoothing methods give the best forecasting results for our data.
+
+
+```{r}
+#Final Results  
+summary(sseforecast)
+```
+
+```{r}
+#Final Results  
+summary(holtforecast)
+```
+
+```{r}
+#Final Results  
+summary(holtforecastmult)
+```
+
+```{r}
+#Final Results  
+summary(forecast_ets)
+```
+
+
+
+
+
+
+##### In model selection, the goal is typically to choose the model that provides the most accurate forecasts. RMSE is a better choice for this purpose because it provides a more accurate representation of forecasting errors, taking both magnitude and direction into account. Lower RMSE values indicate better forecasting performance. From the Analysis of RMSE of the four given models we can see that RMSE of **SSE > HoltWinters > HoltWinters(Multi) > ETS **. Hence Exponential Smoothing State Space (ETS) is the best model for forecasting for our data.
