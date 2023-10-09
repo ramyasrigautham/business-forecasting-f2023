@@ -1,5 +1,9 @@
 Dataset: Wind power production in the USA.
 Description of the data is present in sheet 'datadictionary' available in the same folder.
+Data set downloaded from https://www.eia.gov/electricity/data/browser/#/topic/ website 
+Dataset has 125 columns - Wind Power produced state wise and overall. It also includes other renawable source of power energy(solar,Geothermal,Biomass,wind) details which can be used for future practice if needed. 
+for now I would only consider Wind power production in the USA column which has over all production data.
+Data extracted on : 10-04-2023
 
 1. Data Collection Methodology. State how the data is collected, by whom, how often, etc. 
 [Ans]:Sample data set is analysed in Kaggle and then actual quaterly data downloaded from eia.gov datasource website for the period 2001 to 2023 Q2.
