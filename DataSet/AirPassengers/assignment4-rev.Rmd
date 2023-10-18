@@ -1,0 +1,22 @@
+---
+title: "Assignment4-rev"
+author: "Ramya Sri Gautham:ramya.srigautham@rutgers.edu"
+date: "2023-10-18"
+---
+
+```{r message=FALSE}
+#loading file and libraries
+library(readxl)
+library(forecast)
+airP <- read.csv('AirPassengers.CSV')
+
+#Time series data for passengers from 1949 to 1960
+ts_data <-ts(airP$X.Passengers,start=c(1949),frequency = 12)
+ts_data
+attributes(ts_data)
+```
+```{r}
+plot(ts_data, main='Air passengers from 1949 to 1960', xlab='years', ylab='Passenger count')
+Acf(ts_data)
+```
+
