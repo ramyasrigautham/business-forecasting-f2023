@@ -1,1 +1,13 @@
+Dataset: Air passengers count in the USA.
+Description of the data is present in sheet 'datadictionary_Air' available in the same folder.
+Data set downloaded from https://www.kaggle.com/datasets/chirag19/air-passengers/data website 
+This dataset provides monthly totals of US airline passengers from 1949 to 1960. This dataset retirved from an inbuilt dataset of R called AirPassengers.
+However, I'm using the CSV file for practice purpose.
+Data extracted on: 10-16-2023
 
+1. Data Collection Methodology. State how the data is collected, by whom, how often, etc. 
+[Ans]: A sample data set is analyzed in Kaggle and downloaded.
+
+2. Why does this data set intrigue you?
+[Ans]This data is about air passengers back in the 1950's. I'm curious to know how much change happened from those days to the present.
+ 
