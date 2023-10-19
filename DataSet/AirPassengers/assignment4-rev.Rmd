@@ -9,14 +9,160 @@ date: "2023-10-18"
 library(readxl)
 library(forecast)
 airP <- read.csv('AirPassengers.CSV')
-
-#Time series data for passengers from 1949 to 1960
-ts_data <-ts(airP$X.Passengers,start=c(1949),frequency = 12)
-ts_data
-attributes(ts_data)
+names(airP) <- c('month','Passengers')
+#Time series monthly data for air passengers from 1949 to 1960
+ts_data <-ts(airP$Passengers,start=c(1949),frequency = 12)
 ```
+
 ```{r}
 plot(ts_data, main='Air passengers from 1949 to 1960', xlab='years', ylab='Passenger count')
-Acf(ts_data)
+
 ```
 
+
+##### As per the plot, it's clear that the trend is growing upward every year with a spike representing seasonality year to year.
+
+
+```{r}
+Acf(ts_data, main ='ACF plot for airPassengers')
+```
+
+
+##### According to the ACF analysis , there is a strong positive co-relation between every month passengers count as most of lines are above significant line and 1st lag has value around 0.9. Wave like structure in the plot represents the trend growth and there also exist seasonality between 1st,12th,24th month.
+
+
+```{r}
+mean_forecast <- meanf(ts_data,12)
+plot(mean_forecast, main='Forecast for upcoming 12 periods using mean', xlab='years',ylab='Passengers count')
+```
+
+
+
+##### mean forecast prediction is based on the mean of the passenger count value, which is around 280. The plot justifies the result.
+
+```{r}
+# Naive forecast
+naive_forecast <- naive(ts_data,12)
+plot(naive_forecast , main='Naive forecast plot for next 12 periods', xlab='years', ylab='Passengers count')
+```
+
+
+
+##### last period of the data set shows a passenger count of 432. hence naive forecast is always on the last period value. The plot shows the forecast for the upcoming 12 periods as 432. In our case, naive forecasting is not useful as we have seasonality and trend.
+
+
+```{r}
+# Random Walk
+#rwf_forecast <- rwf(ts_data,12)
+rwf_forecast <- rwf(ts_data,12, drift=TRUE)
+# Seasonal Naive
+snaive_forecast<- snaive(ts_data,12)
+plot(snaive_forecast , main='Seasonal Naive forecast plot for next 12 periods', xlab='years', ylab='Passengers count')
+```
+
+
+##### Seasonal naive we set each forecast to be equal to the last observed value from the same season. hence plot has the curve same as previous year.
+
+```{r}
+# Moving Averages
+MVA7_forecast <- ma(ts_data,order=7)
+MVA11_forecast <- ma(ts_data,order=11)
+
+```
+
+##### A 7 and 11-period moving average is calculated for the time series. The resulting MVA7_forecast and MVA11_forecast variables will contain the moving averages for each point in the 'data' series based on the specified order of 7 and 11 respectively.
+
+```{r}
+
+# plot all in a single chart
+plot(mean_forecast, xlab='years', ylab='Passengers count' ,main='plot with multiple forecasts')
+lines(naive_forecast$mean,col="red")
+lines(rwf_forecast$mean,col="green")
+lines(snaive_forecast$mean,col="black")
+lines(MVA7_forecast,col="Pink")
+lines(MVA11_forecast,col="Blue")
+```
+
+
+##### Random walk forecast or Drift method is a variation of the naive method that allows the forecasts to increase or decrease overtime, where the amount of change overtime (drift) is the average change seen historically. That means the value of the next 12 forecasts would depend only the last observation **432** added with the value of drift at each level of observation.Also from the plots of Moving Averagers of orders 7 and 11 we can remove the seasonality components and we can cleary see that the data has a **Linear Additive Trend**.
+
+```{r}
+# Decomposition
+ets_forecast <- ets(ts_data)
+plot(ets_forecast)
+```
+
+
+##### From the decomposition of the data using the ETS function, we can see that the model that was automatically chosen was ETS(M,Ad,M). This would mean that the data has multiplication error, Additive Trend and Multiplicative Seasonality. Judging by the plot, we can see that the growth of the trend is quite linear and not exponential which would mean that it is additive. And the size of the growth of seasonality increases over time especially from years 1956 to 1960
+
+
+```{r}
+dec_forecast <- stl(ts_data, s.window = 'periodic')
+plot(dec_forecast)
+```
+
+```{r}
+# HoltWinters
+SSE_Simple <- HoltWinters(ts_data,beta=FALSE,gamma=FALSE)
+sseforecast <- forecast:::forecast.HoltWinters(SSE_Simple,h=12)
+plot(SSE_Simple)
+```
+
+
+##### From the decomposition analysis, we can clearly see that there is noticable influence of trend and seasonality. Hence simple smoothing equations method would not be the correct method for our forecasting as it negelects the trend and seasonality components. The resulting plots proves the same analysis.
+
+```{r}
+HW_forecast <- HoltWinters(ts_data)
+holtforecast <- forecast:::forecast.HoltWinters(HW_forecast,h=12)
+HW_forecast
+plot(HW_forecast,ylab='Passengers Count',xlab='years')
+
+```
+
+##### Finally we come to Holt-Winters method which incorporates with both trend and seasonal components. First we try by using the default function which results in the model selecting smoothing with trend and additive seasonal component. This would not yeild the best results as we found from previous analysis that the best fit for our model would be with multiplicative component for seasonality.
+
+```{r}
+HW_forecastmult <- HoltWinters(ts_data , seasonal = "multiplicative")
+holtforecastmult <- forecast:::forecast.HoltWinters(HW_forecastmult,h=12)
+plot(HW_forecastmult, ylab='Passengers Count', main='Holt-Wintersmfiltering using multiplicative Season', xlab='years')
+```
+
+
+##### Now we can change the sesonality to be multiplicative and see how that helps in forecasting. From the plot we can see that this is a better fit than the additive seasonality plot.
+
+```{r}
+#Forecast of all methods
+plot(sseforecast , main = 'Forecasts from HoltWinters with no Trend and seasonality', ylab='Passengers Count', xlab='years')
+forecast_ets <- forecast.ets(ets_forecast, h=12)
+plot(forecast_ets,ylab='Passengers Count', xlab='years')
+plot(holtforecast,ylab='Passengers Count', xlab='years', main='Forecasts from HoltWinters with Additive Seasonality')
+plot(holtforecastmult, main = "Forecasts from HoltWinters with Multiplicative Seasonality",ylab='Passengers Count', xlab='years')
+
+```
+
+
+
+
+
+##### For all the different types of forecasts, we can see that Holt-Winters forecasting with multiplicative seasonality and normal exponential smoothing methods give the best forecasting results for our data.
+```{r}
+#Final Results  
+accuracy(sseforecast)
+```
+
+```{r}
+#Final Results  
+accuracy(holtforecast)
+```
+
+```{r}
+#Final Results  
+accuracy(holtforecastmult)
+```
+
+```{r}
+#Final Results  
+accuracy(forecast_ets)
+```
+
+##### In model selection, the goal is typically to choose the model that provides the most accurate forecasts. RMSE is a better choice for this purpose because it provides a more accurate representation of forecasting errors, taking both magnitude and direction into account. Lower RMSE values indicate better forecasting performance. From the Analysis of RMSE of the four given models we can see that RMSE of **SSE > HoltWinters > HoltWinters(Multi) > ETS **. Hence Exponential Smoothing State Space (ETS) is the best model for forecasting for our data.
