@@ -1,5 +1,5 @@
 ---
-title: "Assignment4-rev"
+title: "Assignment4-revision-Air Passenger Count"
 author: "Ramya Sri Gautham:ramya.srigautham@rutgers.edu"
 date: "2023-10-18"
 ---
@@ -101,6 +101,8 @@ dec_forecast <- stl(ts_data, s.window = 'periodic')
 plot(dec_forecast)
 ```
 
+##### As we can see in the plot Trend has majot contribution. it has increase from 100 to more than 400.
+
 ```{r}
 # HoltWinters
 SSE_Simple <- HoltWinters(ts_data,beta=FALSE,gamma=FALSE)
@@ -114,7 +116,6 @@ plot(SSE_Simple)
 ```{r}
 HW_forecast <- HoltWinters(ts_data)
 holtforecast <- forecast:::forecast.HoltWinters(HW_forecast,h=12)
-HW_forecast
 plot(HW_forecast,ylab='Passengers Count',xlab='years')
 
 ```
