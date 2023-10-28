@@ -1,0 +1,79 @@
+---
+title: 'Assignment5'
+author: 'Ramya Sri Gautham : ramya.srigautham@rutgers.edu'
+date: "10/27/2023"
+---
+<br>
+<br>
+
+#### **Wind Power Production Data:**
+
+* Performing decompose functionalities on wind production data set:
+```{r message=FALSE}
+# loading library files
+library(readxl)
+library(forecast)
+
+# loading the data set
+windDT <-read_excel('wind-power-production-us.xlsx')
+
+# Extracting wind power production in the USA data from 2016 to 2023 
+windDT$Quarter_Year <- as.Date(windDT$Quarter_Year)
+filtered_data <- windDT[windDT$Quarter_Year >= '2016-01-01' & windDT$Quarter_Year <= '2023-04-01',]
+```
+
+##### * Converting into Time Series Data
+```{r}
+ts_data <- ts(filtered_data$Wind_United_States,start=c(2016), frequency = 4)
+```
+
+```{r}
+plot(ts_data,main='Time series plot for wind power production from 2016 to 2023',xlab='years',ylab='Power generated in thousand kwh')
+```
+<br>
+
+##### 1.Applying decomposition functionality to verify individual components using STL function
+```{r}
+fd_stl <- stl(ts_data,s.window = 'periodic')
+plot(fd_stl,main='Decomposition plot for wind power production Time series' )
+```
+
+##### Both growing trend and additive seasonality are observed in above STL plot, it suggests that the data exhibits a consistent, ongoing trend upward over time, alongside regular seasonal pattern. Also, plot shows remainder as relatively small deviations or unexplained variations. This means that the trend and seasonal components explain most of the structure in the data, leaving behind only minor fluctuations or random noise that is not captured by the identidfied trend and seasonal patterns.
+<br>
+
+```{r}
+plot(ts_data, main='Time series plot for wind power production from 2016 to 2023',xlab='years',ylab='Power generated in thousand kwh')
+lines(seasadj(fd_stl), col="Red")
+
+```
+
+##### Plot shows red line as STL components without influence of seasonal fluctuation on actual time series model
+<br>
+
+```{r}
+# forecasting the model
+stl_for <- forecast(fd_stl,h=5)
+plot(stl_for)
+```
+
+
+##### we know that forecasting on decomposed model will not give proper output, Still for practice purpose we can observe that ETS plot having multiplicative Error, Additive Trend and No seasonality patterns.
+
+<br>
+
+##### 2.Applying decompose functionality to verify individual components using Decompose function
+```{r}
+fd_dec <- decompose(ts_data)
+plot(fd_dec)
+```
+
+##### Even decompose function plot showing similar result as STL function.
+
+```{r}
+dec_for <- forecast(seasadj(fd_dec),h=5)
+plot(dec_for)
+```
+
+##### ETS forecast for seasonal adjusted decomposed model shows multiplicative Error, Additive Trend and No seasonality patterns
+<br>
+
