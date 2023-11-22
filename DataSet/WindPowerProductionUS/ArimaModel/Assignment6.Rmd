@@ -1,0 +1,106 @@
+---
+title: "Assignment-6"
+author: "Ramya Sri Gautham:ramya.srigautham@rutgers.edu"
+date: "11/22/2023"
+output: html_document
+---
+
+<br>
+
+#### Load dataset
+```{r message=FALSE}
+#loading file and libraries
+library(readxl)
+library(forecast)
+windDT <-read_excel("~/wind-power-production-us.xlsx")
+#Time series data 
+ts_data <- ts(windDT$Wind_United_States, end=c(2023,2), frequency=4)
+#Time series data from 2016 to 2023
+windts <- window(ts_data, c(2016))
+#Let's recall components present in the data set.
+tsdisplay(windts)
+
+```
+
+<br>
+* From just the above plots of the Time Series we can see that there is a upward trend in the data over the period of time and also showing signs of seasonality year to year from the regular peaks in the ACF plot.
+<br>
+<br>
+
+#### Arima Output
+
+```{r}
+#perform auto arima on the time series data set
+auto_fit <- auto.arima(windts)
+auto_fit_Wostepwise <-auto.arima(windts, stepwise=FALSE, approximation=FALSE)
+auto_fit
+```
+<br>
+* As per the output, the **ARIMA(0,0,1)(0,1,0)[4] with drift**  model is selected.<br>
+* ARIMA(0,0,1): This is the non-seasonal part of the model:<br>
+  1. The first number (0) is the order of the AutoRegressive (AR) term. A value of 0 means that the model does not use past values of the series itself to predict future values.<br>
+  2. The second number (0) is the order of differencing (I for Integrated). Here, 0 means that the series is assumed to be stationary and does not require differencing to make it stationary.<br>
+  3.The third number (1) is the order of the Moving Average (MA) term. This indicates that the model uses one lagged forecast error in predicting future values.<br><br>
+* (0,1,0)[4]: This is the seasonal component of the model: <br>  
+  1. The first number in the parentheses (0) is the seasonal AR term. It's 0, indicating no seasonal AR component.<br>
+  2. The second number (1) is the order of seasonal differencing. This means the data is seasonally differenced once to achieve stationarity.<br>
+  3.The third number (0) is the seasonal MA term, which is also 0, indicating no seasonal MA component.<br>
+  4.The number in the square brackets ([4]) represents the seasonal period (quarterly data).<br> 
+* The coefficients and their standard errors (s.e.) are given for each term. The model's performance is indicated by the log likelihood, AIC, AICc, and BIC values.<br>
+
+```{r}
+# Auto arima with stepwise=False
+auto_fit_Wostepwise
+```
+
+* Here, the **ARIMA(0,0,0)(0,1,1)[4] with drift**  model is selected.<br>
+* non seasonal component part of the model contains 0 order of the moving Average.
+* seasonal component part contains 1 moving average.
+* As the AIC,BIC,accuracy is better in stepwise =False case. we will be considering this model for the prediction.<br>
+
+#### Residual Analysis
+
+```{r}
+#Residual Analysis
+tsdisplay(residuals(auto_fit_Wostepwise))
+```
+<br>
+* As per Acf plot there are no significant spike. Hence its only white noise.
+<br>
+```{r}
+tsdiag(auto_fit_Wostepwise)
+```
+<br>
+* The Ljung-Box test is applied to the residuals and interpret the results. P-values greater than a chosen significance level indicate that the residuals do not show significant autocorrelation.
+<br>
+```{r}
+hist(auto_fit_Wostepwise$residuals)
+```
+
+<br>
+* As per histogram the residuals randomly distributed with a mean of zero.
+<br>
+
+#### Perform forecast
+```{r}
+#Forecast for the next 5 period
+windts_for <- forecast(auto_fit_Wostepwise, h=5)
+plot(windts_for)
+```
+<br>
+* As the drift coefficient of the arima model is **2036.6969** positive ,  the forecast shows the linear trend in upward direction.<br>
+* Given the seasonal MA and differencing components, the forecast account for the seasonality observed in the data, typically repeating seasonal patterns observed in the historical data every quarters.<br>
+* 95% confidence intervals provides the range within which the future values are expected to lie.
+<br>
+
+#### Accuracy of the model
+```{r}
+# Accuracy of arima with stepwise =TRUE
+accuracy(auto_fit)
+#Accuracy of arima with stepwise =FALSE
+accuracy(auto_fit_Wostepwise)
+```
+
+<br>
+
+##### As per the accuracy RMSE of arima model **ARIMA(0,0,0)(0,1,1)[4] with drift** has **6759.059** which is better than the **ARIMA(0,0,1)(0,1,0)[4] with drift**. hence we can forecast using arima model **ARIMA(0,0,0)(0,1,1)[4] with drift**.
